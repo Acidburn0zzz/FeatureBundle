@@ -1,7 +1,35 @@
-# FeatureBundle for Symfony2
+# Feature Bundle for Symfony
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/?branch=master)
 [![Build Status](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/badges/build.png?b=master)](https://scrutinizer-ci.com/g/adespresso/FeatureBundle/build-status/master)
 
 This bundle manage release of new features to specific subsets of users.
+
+## Install
+
+Via Composer
+
+``` bash
+$ composer require adespresso/feature-bundle
+```
+
+## Documentation
+
+The source of the documentation is stored in the `Resources/doc/` folder in this bundle:
+
+[Documentation](Resources/doc/index.rst)
+
+## Change log
+
+Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+
+## Testing
+
+``` bash
+$ composer test
+```
+
+## Contributing
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
