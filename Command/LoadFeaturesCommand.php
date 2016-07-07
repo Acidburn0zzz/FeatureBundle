@@ -3,8 +3,6 @@
 namespace Ae\FeatureBundle\Command;
 
 use Ae\FeatureBundle\Twig\Node\FeatureNode;
-use Exception;
-use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,9 +12,9 @@ use Symfony\Component\Finder\Finder;
 use Twig_Node;
 
 /**
- * @author Carlo Forghieri <carlo@adespresso.com>
+ * Load features from some directories.
  */
-class LoadFeatureCommand extends ContainerAwareCommand
+class LoadFeaturesCommand extends ContainerAwareCommand
 {
     /**
      * {@inheritdoc}
@@ -24,12 +22,12 @@ class LoadFeatureCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-            ->setName('features:load')
+            ->setName('adespresso:features:load')
             ->setDescription('Persist new features found in templates')
             ->addArgument(
-                'bundle',
-                InputArgument::REQUIRED,
-                'The bundle where to load the features'
+                'path',
+                InputArgument::REQUIRED | InputArgument::IS_ARRAY,
+                'The path where to load the features'
             )
             ->addOption(
                 'dry-run',
@@ -44,38 +42,35 @@ class LoadFeatureCommand extends ContainerAwareCommand
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $twig = $this->getContainer()->get('twig');
-        $bundle = $this
-            ->getApplication()
-            ->getKernel()
-            ->getBundle($input->getArgument('bundle'));
-
-        if (!$bundle) {
-            throw new InvalidArgumentException("Bundle `$bundle` does not exists");
-        }
+        $container = $this->getContainer();
+        $twig = $container->get('twig');
         $found = [];
-        $dir = $bundle->getPath().'/Resources/views/';
-        if (!is_dir($dir)) {
-            throw new Exception("'Directory `$dir` does not exists.");
+        $files = Finder::create()
+            ->files()
+            ->name('*.twig');
+
+        foreach ($input->getArgument('path') as $path) {
+            $files = $files->in($path);
         }
-        $finder = new Finder();
-        $files = $finder->files()->name('*.html.twig')->in($dir);
+
         foreach ($files as $file) {
             $tree = $twig->parse(
                 $twig->tokenize(file_get_contents($file->getPathname()))
             );
-            $tags = $this->findFeatureNodes($tree);
-            if ($tags) {
-                $found = array_merge($found, $tags);
 
-                foreach ($tags as $tag) {
-                    $output->writeln(sprintf(
-                        'Found <info>%s</info>.<info>%s</info> in <info>%s</info>',
-                        $tag['parent'],
-                        $tag['name'],
-                        $file->getFilename()
-                    ));
-                }
+            if (!$tags = $this->findFeatureNodes($tree)) {
+                continue;
+            }
+
+            $found += $tags;
+
+            foreach ($tags as $tag) {
+                $output->writeln(sprintf(
+                    'Found <info>%s</info>.<info>%s</info> in <info>%s</info>',
+                    $tag['parent'],
+                    $tag['name'],
+                    $file->getFilename()
+                ));
             }
         }
 
@@ -83,13 +78,20 @@ class LoadFeatureCommand extends ContainerAwareCommand
             return;
         }
 
-        $manager = $this->getContainer()->get('cw_feature.manager');
+        $manager = $container->get('ae_feature.manager');
         foreach ($found as $tag) {
             $manager->findOrCreate($tag['name'], $tag['parent']);
         }
     }
 
-    protected function findFeatureNodes(Twig_Node $node)
+    /**
+     * Find feature nodes.
+     *
+     * @param Twig_Node $node
+     *
+     * @return array
+     */
+    private function findFeatureNodes(Twig_Node $node)
     {
         $found = [];
         $stack = [$node];
@@ -120,6 +122,6 @@ class LoadFeatureCommand extends ContainerAwareCommand
             }
         }
 
-        return array_values($found);
+        return $found;
     }
 }
